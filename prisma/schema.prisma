@@ -1,0 +1,89 @@
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Employee {
+  employeeID Int    @id @default(autoincrement())
+  name       String @db.VarChar(100)
+  lastName   String @db.VarChar(100)
+  dni        String @unique @db.VarChar(8)
+
+  loans Loan[]
+
+  @@map("employees")
+}
+
+model Tool {
+  toolID Int        @id @default(autoincrement())
+  name   String     @unique @db.VarChar(100)
+  units  ToolUnit[]
+
+  @@map("tools")
+}
+
+model ToolUnit {
+  unitId     Int    @id @default(autoincrement()) @map("unit_id")
+  toolId     Int    @map("tool_id")
+  serialCode String @unique @map("serial_code") @db.VarChar(50)
+  status     String @default("Disponible") @db.VarChar(20)
+
+  tool      Tool       @relation(fields: [toolId], references: [toolID])
+  loanTools LoanTool[]
+
+  @@map("tool_units")
+}
+
+model Material {
+  materialID  Int     @id @default(autoincrement())
+  name        String  @db.VarChar(100)
+  description String? @db.VarChar(200)
+  unit        String  @db.VarChar(20)
+  quantity    Int     @default(0)
+
+  loanMaterials LoanMaterial[]
+
+  @@map("materials")
+}
+
+model Loan {
+  loanId      Int      @id @default(autoincrement()) @map("loan_id")
+  employeeId  Int      @map("employee_id")
+  destination String?  @db.VarChar(100)
+  loanDate    DateTime @default(now()) @map("loan_date") @db.Timestamp(6)
+  status      String?  @default("Entregado") @db.VarChar(20)
+
+  employee  Employee      @relation(fields: [employeeId], references: [employeeID])
+  loanTools LoanTool[]
+  materials LoanMaterial[]
+
+  @@map("loan")
+}
+
+model LoanTool {
+  loanId Int @map("loan_id")
+  unitId Int @map("unit_id")
+
+  loan Loan     @relation(fields: [loanId], references: [loanId])
+  unit ToolUnit @relation(fields: [unitId], references: [unitId])
+
+  @@id([loanId, unitId])
+  @@map("loan_tool")
+}
+
+model LoanMaterial {
+  loanId     Int @map("loan_id")
+  materialId Int @map("material_id")
+  quantity   Int
+
+  loan     Loan     @relation(fields: [loanId], references: [loanId])
+  material Material @relation(fields: [materialId], references: [materialID])
+
+  @@id([loanId, materialId])
+  @@map("loan_material")
+}
